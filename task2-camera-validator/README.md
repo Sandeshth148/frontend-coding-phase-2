@@ -14,7 +14,7 @@ Each hardware camera supports a rectangular subrange. The software camera must e
 ## 📂 Project Structure
 
 ```
-task-2-camera-validator/
+task2-camera-validator/
 ├── src/
 │   ├── index.ts      # Core validation logic
 │   └── types.ts      # Shared type interfaces
