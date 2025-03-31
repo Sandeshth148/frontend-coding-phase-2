@@ -38,7 +38,7 @@ A self-contained, performance-optimized Angular 16 standalone component that dis
 
 ## 🚀 Live Demo
 
-📍 [Live App Link (https://sandeshth148.github.io/frontend-coding-phase-2/)](https://sandeshth148.github.io/frontend-coding-phase-2/)  
+📍 [Live App Link (https://sandeshth148.github.io./frontend-coding-phase-2/)](https://sandeshth148.github.io/frontend-coding-phase-2/)  
 📷 Screenshots below ↓
 
 ---

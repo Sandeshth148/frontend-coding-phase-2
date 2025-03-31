@@ -1,16 +1,44 @@
-# Frontend Coding Phase 2
+# 🚀 Frontend Coding Phase 2
 
-This repository contains the coding assignments for Phase 2 of the frontend interview process.
+This repository contains the coding assignments for Phase 2 of the frontend interview process at 6crickets.
+
+---
+
+## ✅ Task 1 — Angular Countdown Timer
+
+- ✅ Built with Angular 16 standalone component
+- ✅ Uses RxJS to display a real-time countdown from API
+- ✅ Unit-tested with mocked services
+- ✅ Hosted online with GitHub Pages
+
+🔗 **Live App:** [https://sandeshth148.github.io./frontend-coding-phase-2/](https://sandeshth148.github.io/frontend-coding-phase-2/)
+
+📁 [Source Code](./task1-angular)  
+📁 [Deployed Output](./docs) — used for GitHub Pages hosting
+
+---
 
 ## ✅ Task 2 — Hardware Camera Coverage Validator
 
-- Completed and available in [`task-2-camera-validator/`](./task-2-camera-validator)
-- Solves the 2D coverage validation using TypeScript
-- Fully tested with multiple edge cases and complexity documented
+- ✅ Implemented in TypeScript
+- ✅ Validates 2D coverage of subject distance + light ranges
+- ✅ Well-tested and structured for readability
 
-## ⏳ Task 1 — Angular Countdown Timer
+📁 [Source Code](./task-2-camera-validator)
 
-- Pending implementation
-- Will involve developing an Angular component that pulls deadline data from an API and displays a live countdown
+---
 
-Stay tuned for updates.
+## 📦 How to Run Locally
+
+```bash
+# For Task 1 (Angular)
+cd task1-angular
+npm install
+ng serve
+
+# For Task 2 (Node/TS)
+cd task-2-camera-validator
+npm install
+npm test
+
+```
