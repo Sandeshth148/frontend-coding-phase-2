@@ -24,7 +24,7 @@ This repository contains the coding assignments for Phase 2 of the frontend inte
 - ✅ Validates 2D coverage of subject distance + light ranges
 - ✅ Well-tested and structured for readability
 
-📁 [Source Code](./task-2-camera-validator)
+📁 [Source Code](./task2-camera-validator)
 
 ---
 
@@ -37,7 +37,7 @@ npm install
 ng serve
 
 # For Task 2 (Node/TS)
-cd task-2-camera-validator
+cd task2-camera-validator
 npm install
 npm test
 
