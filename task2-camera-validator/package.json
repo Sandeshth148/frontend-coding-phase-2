@@ -1,5 +1,5 @@
 {
-  "name": "task-2-camera-validator",
+  "name": "task2-camera-validator",
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
