@@ -38,7 +38,7 @@ A self-contained, performance-optimized Angular 16 standalone component that dis
 
 ## 🚀 Live Demo
 
-📍 [Live App Link (GitHub Pages)](https://your-github-username.github.io/task1-angular/)  
+📍 [Live App Link (https://sandeshth148.github.io/frontend-coding-phase-2/)](https://sandeshth148.github.io/frontend-coding-phase-2/)  
 📷 Screenshots below ↓
 
 ---
@@ -54,10 +54,10 @@ A self-contained, performance-optimized Angular 16 standalone component that dis
 ## 🛠️ How to Run Locally
 
 ```bash
-git clone https://github.com/sandeshth148/task1-angular.git
+git clone https://github.com/Sandeshth148/frontend-coding-phase-2.git
 cd task1-angular
 npm install
-ng serve
+ng serve -o
 ```
 
 ## 🧰 How It Works
