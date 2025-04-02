@@ -6,7 +6,7 @@ const softwareCam: SoftwareCamera = {
   light: { min: 5, max: 15 },
 };
 
-const testCases: { label: string; expected: boolean; cams: Camera[] }[] = [
+const testCases = [
   {
     label: "TC1: One camera covers all",
     expected: true,
@@ -46,6 +46,22 @@ const testCases: { label: string; expected: boolean; cams: Camera[] }[] = [
       { distance: { min: 19, max: 20 }, light: { min: 5, max: 15 } },
       { distance: { min: 12, max: 14 }, light: { min: 5, max: 10 } },
       { distance: { min: 10, max: 20 }, light: { min: 11, max: 15 } },
+    ],
+  },
+  {
+    label: "TC6: Overlapping cameras",
+    expected: true,
+    cams: [
+      { distance: { min: 10, max: 18 }, light: { min: 5, max: 15 } },
+      { distance: { min: 15, max: 20 }, light: { min: 5, max: 15 } },
+    ],
+  },
+  {
+    label: "TC7: Minimal floating-point gap",
+    expected: false,
+    cams: [
+      { distance: { min: 10, max: 15.999 }, light: { min: 5, max: 15 } },
+      { distance: { min: 16.001, max: 20 }, light: { min: 5, max: 15 } },
     ],
   },
 ];
