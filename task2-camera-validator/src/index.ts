@@ -1,8 +1,11 @@
 import { SoftwareCamera, Camera } from "./types";
 
 /**
- * Represents a discrete camera coverage rectangle with integer boundaries.
- * Used internally for optimized interval calculations.
+ * Represents a discrete coverage rectangle with integer boundaries
+ * @property d_min - Minimum distance (inclusive)
+ * @property d_max - Maximum distance (inclusive)
+ * @property l_min - Minimum light level (inclusive)
+ * @property l_max - Maximum light level (inclusive)
  */
 type DiscreteRect = {
   d_min: number;
@@ -12,94 +15,119 @@ type DiscreteRect = {
 };
 
 /**
- * Validates whether hardware cameras provide complete coverage of the software camera's requirements.
- * Uses discrete interval mathematics for efficient verification, with midpoint checks to prevent gaps.
+ * Validates complete camera coverage with O(N log N) average-case complexity.
  *
  * Key Features:
- * - Converts continuous ranges to discrete intervals for computational efficiency
- * - Divides the problem into vertical stripes for parallelizable checking
- * - Merges light coverage intervals per stripe to verify complete coverage
- * - Includes midpoint safeguards to catch adjacent-but-non-overlapping cameras
+ * - Handles continuous ranges via conservative discretization
+ * - Midpoint checks catch floating-point gaps
+ * - Early termination on first coverage gap
  *
- * Complexity Analysis:
- * - Time: O(N log N) average case, O(N²) worst case (when cameras have many overlapping stripes)
- *   - N = number of hardware cameras
- *   - Dominated by sorting and merging intervals
- * - Space: O(N) for storing boundaries and intermediate intervals
- *
- * @param {SoftwareCamera} softwareCam - The software camera's required coverage range
- * @param {Camera[]} hardwareCams - Available hardware cameras with their coverage ranges
- * @returns {boolean} True if every point in the software range is covered by at least one hardware camera
+ * Complexity:
+ * - Best: O(N)       (single camera covers all)
+ * - Average: O(N log N) (typical camera distribution)
+ * - Worst: O(N²)     (highly fragmented cameras)
  */
 export function willCamerasSuffice(
   softwareCam: SoftwareCamera,
   hardwareCams: Camera[]
 ): boolean {
-  // Convert target ranges to discrete integer intervals
-  // Using ceil/floor ensures we don't miss boundary cases
-  const d_min_target = Math.ceil(softwareCam.distance.min);
-  const d_max_target = Math.floor(softwareCam.distance.max);
-  const l_min_target = Math.ceil(softwareCam.light.min);
-  const l_max_target = Math.floor(softwareCam.light.max);
-
-  // Pre-process cameras: clamp to target range and discard invalid ones
-  const effectiveCams: DiscreteRect[] = [];
-  for (const cam of hardwareCams) {
-    const cam_d_min = Math.ceil(Math.max(cam.distance.min, d_min_target));
-    const cam_d_max = Math.floor(Math.min(cam.distance.max, d_max_target));
-    const cam_l_min = Math.ceil(Math.max(cam.light.min, l_min_target));
-    const cam_l_max = Math.floor(Math.min(cam.light.max, l_max_target));
-
-    if (cam_d_min <= cam_d_max && cam_l_min <= cam_l_max) {
-      effectiveCams.push({
-        d_min: cam_d_min,
-        d_max: cam_d_max,
-        l_min: cam_l_min,
-        l_max: cam_l_max,
-      });
-    }
-  }
-
-  // Edge case: no valid cameras after clamping
-  if (effectiveCams.length === 0) {
+  // First check exact boundaries (avoid discretization misses)
+  if (!checkBoundaryPoints(softwareCam, hardwareCams)) {
     return false;
   }
 
-  // Collect all critical distance boundaries
-  const boundariesSet = new Set<number>([d_min_target, d_max_target + 1]);
-  for (const cam of effectiveCams) {
-    boundariesSet.add(cam.d_min);
-    boundariesSet.add(cam.d_max + 1); // +1 for half-open intervals
-    boundariesSet.add(Math.floor((cam.d_min + cam.d_max) / 2)); // Midpoint check
-  }
+  // Convert to discrete intervals (conservative)
+  const [d_min, d_max] = [
+    Math.ceil(softwareCam.distance.min),
+    Math.floor(softwareCam.distance.max),
+  ];
+  const [l_min, l_max] = [
+    Math.ceil(softwareCam.light.min),
+    Math.floor(softwareCam.light.max),
+  ];
 
-  // Process stripes in sorted order
-  const boundaries = Array.from(boundariesSet).sort((a, b) => a - b);
+  const effectiveCams = hardwareCams
+    .map((cam) => ({
+      d_min: Math.ceil(Math.max(cam.distance.min, d_min)),
+      d_max: Math.floor(Math.min(cam.distance.max, d_max)),
+      l_min: Math.ceil(Math.max(cam.light.min, l_min)),
+      l_max: Math.floor(Math.min(cam.light.max, l_max)),
+    }))
+    .filter((cam) => cam.d_min <= cam.d_max && cam.l_min <= cam.l_max);
+
+  if (effectiveCams.length === 0) return false;
+
+  // Process distance stripes
+  const boundaries = collectBoundaries(d_min, d_max, effectiveCams);
   for (let i = 0; i < boundaries.length - 1; i++) {
-    const stripeStart = boundaries[i];
-    const stripeEnd = boundaries[i + 1] - 1; // Convert to inclusive
-
-    // Skip irrelevant stripes
-    if (stripeEnd < d_min_target || stripeStart > d_max_target) continue;
-
-    // Find cameras covering this entire stripe
-    const activeCams = effectiveCams.filter(
-      (cam) => cam.d_min <= stripeStart && cam.d_max >= stripeEnd
-    );
-    if (activeCams.length === 0) return false;
-
-    // Merge their light coverage intervals
-    const mergedLight = mergeIntervals(
-      activeCams.map((cam) => [cam.l_min, cam.l_max])
-    );
-
-    // Verify full light coverage
-    if (!isRangeCovered(mergedLight, [l_min_target, l_max_target])) {
+    const stripe = { start: boundaries[i], end: boundaries[i + 1] - 1 };
+    if (!checkStripeCoverage(stripe, l_min, l_max, effectiveCams)) {
       return false;
     }
   }
 
   return true;
+}
+
+/** Verifies exact min/max points aren't missed by discretization */
+function checkBoundaryPoints(
+  softwareCam: SoftwareCamera,
+  hardwareCams: Camera[]
+): boolean {
+  const points = [
+    [softwareCam.distance.min, softwareCam.light.min],
+    [softwareCam.distance.min, softwareCam.light.max],
+    [softwareCam.distance.max, softwareCam.light.min],
+    [softwareCam.distance.max, softwareCam.light.max],
+  ];
+
+  return points.every(([d, l]) =>
+    hardwareCams.some(
+      (cam) =>
+        d >= cam.distance.min &&
+        d <= cam.distance.max &&
+        l >= cam.light.min &&
+        l <= cam.light.max
+    )
+  );
+}
+
+/** Collects all critical distance boundaries with midpoints */
+function collectBoundaries(
+  d_min: number,
+  d_max: number,
+  cameras: DiscreteRect[]
+): number[] {
+  const boundaries = new Set<number>([d_min, d_max + 1]);
+
+  cameras.forEach((cam) => {
+    boundaries.add(cam.d_min);
+    boundaries.add(cam.d_max + 1);
+    // Critical: Check midpoints between cameras
+    boundaries.add(Math.floor((cam.d_min + cam.d_max) / 2));
+  });
+
+  return Array.from(boundaries).sort((a, b) => a - b);
+}
+
+/** Checks light coverage for a specific distance stripe */
+function checkStripeCoverage(
+  stripe: { start: number; end: number },
+  l_min: number,
+  l_max: number,
+  cameras: DiscreteRect[]
+): boolean {
+  const activeCams = cameras.filter(
+    (cam) => cam.d_min <= stripe.start && cam.d_max >= stripe.end
+  );
+
+  if (activeCams.length === 0) return false;
+
+  const mergedLight = mergeIntervals(
+    activeCams.map((cam) => [cam.l_min, cam.l_max])
+  );
+
+  return isRangeCovered(mergedLight, [l_min, l_max]);
 }
 
 /**
@@ -127,10 +155,11 @@ function mergeIntervals(intervals: [number, number][]): [number, number][] {
 }
 
 /**
- * Checks if a target range is fully covered by merged intervals
- * @param {[number, number][]} merged - Merged intervals
- * @param {[number, number]} target - Target [min, max] range
- * @returns {boolean} True if fully covered
+ * Checks if target light range is fully covered by merged intervals
+ *
+ * @param merged - Array of merged light intervals
+ * @param target - Target [min, max] light range
+ * @returns true if any interval fully contains the target range
  */
 function isRangeCovered(
   merged: [number, number][],
